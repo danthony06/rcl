@@ -102,7 +102,7 @@ rcl_ret_t rcl_service_event_publisher_init(
 
   if (service_event_publisher->impl) {
     rcutils_reset_error();
-    RCL_SET_ERROR_MSG("service event publisher already initialized, or memory was unintialized");
+    RCL_SET_ERROR_MSG("service event publisher already initialized, or memory was uninitialized");
     return RCL_RET_ALREADY_INIT;
   }
 

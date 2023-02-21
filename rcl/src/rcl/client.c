@@ -51,6 +51,10 @@ unconfigure_service_introspection(
   struct rcl_client_impl_s * client_impl,
   rcl_allocator_t * allocator)
 {
+  if (client_impl == NULL) {
+    return RCL_RET_ERROR;
+  }
+
   if (!client_impl->service_event_publisher) {
     return RCL_RET_OK;
   }
@@ -73,12 +77,16 @@ configure_service_introspection(
   const rosidl_service_type_support_t * type_support,
   const char * remapped_service_name)
 {
-  if (!rcl_node_get_options(node)->enable_service_introspection) {
+  if (!options->enable_service_introspection) {
     return RCL_RET_OK;
   }
 
-  client_impl->service_event_publisher = allocator->zero_allocate(
-    1, sizeof(rcl_service_event_publisher_t), allocator->state);
+  RCL_CHECK_FOR_NULL_WITH_MSG(
+    options->clock, "Clock must not be NULL when service introspection is enabled",
+    return RCL_RET_ERROR;);
+
+  client_impl->service_event_publisher = allocator->allocate(
+    sizeof(rcl_service_event_publisher_t), allocator->state);
   RCL_CHECK_FOR_NULL_WITH_MSG(
     client_impl->service_event_publisher, "allocating memory failed", return RCL_RET_BAD_ALLOC;);
 

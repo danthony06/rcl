@@ -53,6 +53,7 @@ public:
   rcl_ret_t ret;
   const rosidl_service_type_support_t * srv_ts =
     ROSIDL_GET_SRV_TYPE_SUPPORT(test_msgs, srv, BasicTypes);
+
   void SetUp() override
   {
     rcl_ret_t ret;
@@ -74,7 +75,6 @@ public:
     *this->node_ptr = rcl_get_zero_initialized_node();
     const char * name = "test_service_event_publisher_node";
     rcl_node_options_t node_options = rcl_node_get_default_options();
-    node_options.enable_service_introspection = true;
     ret = rcl_node_init(this->node_ptr, name, "", this->context_ptr, &node_options);
     ASSERT_EQ(RCL_RET_OK, ret) << rcl_get_error_string().str;
   }
@@ -428,7 +428,6 @@ public:
     *this->node_ptr = rcl_get_zero_initialized_node();
     const char * name = "test_service_node";
     rcl_node_options_t node_options = rcl_node_get_default_options();
-    node_options.enable_service_introspection = true;
     ret = rcl_node_init(this->node_ptr, name, "", this->context_ptr, &node_options);
     ASSERT_EQ(RCL_RET_OK, ret) << rcl_get_error_string().str;
     const rosidl_service_type_support_t * srv_ts =

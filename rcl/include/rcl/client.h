@@ -54,9 +54,10 @@ typedef struct rcl_client_options_s
   /// Custom allocator for the client, used for incidental allocations.
   /** For default behavior (malloc/free), use: rcl_get_default_allocator() */
   rcl_allocator_t allocator;
-  /// Enable/Disable service introspection features
+  /// Enable/Disable service introspection
   bool enable_service_introspection;
-  /// The clock to use for service introspection message timestampes
+  /// The clock to use for service introspection message timestamps; if
+  /// enable_service_introspection is true, must not be NULL
   rcl_clock_t * clock;
 } rcl_client_options_t;
 

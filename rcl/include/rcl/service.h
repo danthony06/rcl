@@ -56,7 +56,8 @@ typedef struct rcl_service_options_s
   rcl_allocator_t allocator;
   /// Enable/Disable service introspection features
   bool enable_service_introspection;
-  /// The clock to use for service introspection message timestamps
+  /// The clock to use for service introspection message timestamps; if
+  /// enable_service_introspection is true, must not be NULL
   rcl_clock_t * clock;
 } rcl_service_options_t;
 
