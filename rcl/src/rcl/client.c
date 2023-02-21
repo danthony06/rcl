@@ -90,14 +90,9 @@ configure_service_introspection(
   RCL_CHECK_FOR_NULL_WITH_MSG(
     client_impl->service_event_publisher, "allocating memory failed", return RCL_RET_BAD_ALLOC;);
 
-  rcl_service_event_publisher_options_t service_event_options =
-    rcl_service_event_publisher_get_default_options();
-  service_event_options.publisher_options = options->event_publisher_options;
-  service_event_options.clock = options->clock;
-
   *client_impl->service_event_publisher = rcl_get_zero_initialized_service_event_publisher();
   rcl_ret_t ret = rcl_service_event_publisher_init(
-    client_impl->service_event_publisher, node, &service_event_options,
+    client_impl->service_event_publisher, node, options->clock, options->event_publisher_options,
     remapped_service_name, type_support);
   if (RCL_RET_OK != ret) {
     RCL_SET_ERROR_MSG(rcl_get_error_string().str);
@@ -501,9 +496,7 @@ rcl_service_introspection_configure_client_service_event_message_payload(
   RCL_CHECK_ARGUMENT_FOR_NULL(client, RCL_RET_INVALID_ARGUMENT);
   RCL_CHECK_ARGUMENT_FOR_NULL(client->impl, RCL_RET_INVALID_ARGUMENT);
 
-  client->impl->service_event_publisher->impl->options._content_enabled = enable;
-
-  return RCL_RET_OK;
+  return rcl_service_introspection_enable_content(client->impl->service_event_publisher, enable);
 }
 
 #ifdef __cplusplus
