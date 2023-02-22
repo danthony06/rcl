@@ -32,6 +32,7 @@ rcl_node_get_default_options()
   // !!! MAKE SURE THAT CHANGES TO THESE DEFAULTS ARE REFLECTED IN THE HEADER DOC STRING
   rcl_node_options_t default_options = {
     .allocator = rcl_get_default_allocator(),
+    .anonymous_name = false,
     .use_global_arguments = true,
     .arguments = rcl_get_zero_initialized_arguments(),
     .enable_rosout = true,

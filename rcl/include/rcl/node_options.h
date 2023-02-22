@@ -33,7 +33,8 @@ extern "C"
 /// Structure which encapsulates the options for creating a rcl_node_t.
 typedef struct rcl_node_options_s
 {
-  // bool anonymous_name;
+  /// If true, the node's name will be automatically generated as pseudo-random string
+  bool anonymous_name;
 
   // rmw_qos_profile_t parameter_qos;
 
@@ -61,6 +62,7 @@ typedef struct rcl_node_options_s
  * The default values are:
  *
  * - allocator = rcl_get_default_allocator()
+ * - anonymous_name = false
  * - use_global_arguments = true
  * - enable_rosout = true
  * - arguments = rcl_get_zero_initialized_arguments()
