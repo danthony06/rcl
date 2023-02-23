@@ -27,6 +27,12 @@ typedef rcutils_error_string_t rcl_error_string_t;
 
 #define rcl_set_error_state rcutils_set_error_state
 
+#define RCL_CHECK_ARGUMENT_FOR_NON_NULL(argument, error_return_type) \
+  RCUTILS_CHECK_ARGUMENT_FOR_NON_NULL(argument, error_return_type)
+
+#define RCL_CHECK_FOR_NON_NULL_WITH_MSG(value, msg, error_statement) \
+  RCUTILS_CHECK_FOR_NON_NULL_WITH_MSG(value, msg, error_statement)
+
 #define RCL_CHECK_ARGUMENT_FOR_NULL(argument, error_return_type) \
   RCUTILS_CHECK_ARGUMENT_FOR_NULL(argument, error_return_type)
 
