@@ -135,7 +135,7 @@ rcl_node_init(
   RCL_CHECK_ALLOCATOR_WITH_MSG(allocator, "invalid allocator", return RCL_RET_INVALID_ARGUMENT);
 
   const char * local_name = name;
-  if (options->anonymous_node)
+  if (options->anonymous_name)
   {
     struct timespec ts;
     timespec_get(&ts, TIME_UTC);
