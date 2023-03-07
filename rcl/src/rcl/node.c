@@ -134,28 +134,62 @@ rcl_node_init(
   const rcl_allocator_t * allocator = &options->allocator;
   RCL_CHECK_ALLOCATOR_WITH_MSG(allocator, "invalid allocator", return RCL_RET_INVALID_ARGUMENT);
 
-  const char * local_name = name;
+  // These are flags indicating what resources need to be cleaned up. Initialize them here before
+  // anything can potentially fail so that the system can properly free the resources.
+  bool should_free_local_namespace_ = false;
+  bool should_free_local_name_ = false;
+
+  const char * local_name_ = name;
   if (options->anonymous_name)
   {
     struct timespec ts;
     timespec_get(&ts, TIME_UTC);
     if (strlen(name) > 0) {
-      local_name = rcutils_format_string(
+      local_name_ = rcutils_format_string(
         *allocator,
         "%s_%jd%09ld", name, (intmax_t)ts.tv_sec, ts.tv_nsec);
+      RCL_CHECK_FOR_NULL_WITH_MSG(
+        local_name_,
+        "failed to format node name string",
+        ret = RCL_RET_BAD_ALLOC; goto cleanup);
+      should_free_local_name_ = true;
     }
     else {
-      local_name = rcutils_format_string(
+      local_name_ = rcutils_format_string(
         *allocator,
         "%jd%09ld", (intmax_t)ts.tv_sec, ts.tv_nsec);
+      RCL_CHECK_FOR_NULL_WITH_MSG(
+        local_name_,
+        "failed to format node name string",
+        ret = RCL_RET_BAD_ALLOC; goto cleanup);
+      should_free_local_name_ = true;
     }
+    RCUTILS_LOG_DEBUG_NAMED(
+      ROS_PACKAGE_NAME, "Setting anonymous node name to: '%s'", local_name_);
+  }
+  else
+  {
+    // If the node is not anonymous, the name must not be null
+    RCL_CHECK_ARGUMENT_FOR_NULL(local_name_, RCL_RET_INVALID_ARGUMENT);
   }
 
-  RCL_CHECK_ARGUMENT_FOR_NULL(name, RCL_RET_INVALID_ARGUMENT);
+  // Make sure the node name is valid before allocating memory.
+  int validation_result = 0;
+  ret = rmw_validate_node_name(local_name_, &validation_result, NULL);
+  if (RMW_RET_OK != ret) {
+    RCL_SET_ERROR_MSG(rmw_get_error_string().str);
+    return ret;
+  }
+  if (RMW_NODE_NAME_VALID != validation_result) {
+    const char * msg = rmw_node_name_validation_result_string(validation_result);
+    RCL_SET_ERROR_MSG(msg);
+    return RCL_RET_NODE_INVALID_NAME;
+  }
+
   RCL_CHECK_ARGUMENT_FOR_NULL(namespace_, RCL_RET_INVALID_ARGUMENT);
   RCL_CHECK_ARGUMENT_FOR_NULL(node, RCL_RET_INVALID_ARGUMENT);
   RCUTILS_LOG_DEBUG_NAMED(
-    ROS_PACKAGE_NAME, "Initializing node '%s' in namespace '%s'", name, namespace_);
+    ROS_PACKAGE_NAME, "Initializing node '%s' in namespace '%s'", local_name_, namespace_);
 
   if (node->impl) {
     RCL_SET_ERROR_MSG("node already initialized, or struct memory was unintialized");
@@ -170,23 +204,10 @@ rcl_node_init(
       "either rcl_init() was not called or rcl_shutdown() was called.");
     return RCL_RET_NOT_INIT;
   }
-  // Make sure the node name is valid before allocating memory.
-  int validation_result = 0;
-  ret = rmw_validate_node_name(name, &validation_result, NULL);
-  if (ret != RMW_RET_OK) {
-    RCL_SET_ERROR_MSG(rmw_get_error_string().str);
-    return ret;
-  }
-  if (validation_result != RMW_NODE_NAME_VALID) {
-    const char * msg = rmw_node_name_validation_result_string(validation_result);
-    RCL_SET_ERROR_MSG(msg);
-    return RCL_RET_NODE_INVALID_NAME;
-  }
 
   // Process the namespace.
   size_t namespace_length = strlen(namespace_);
   const char * local_namespace_ = namespace_;
-  bool should_free_local_namespace_ = false;
   // If the namespace is just an empty string, replace with "/"
   if (namespace_length == 0) {
     // Have this special case to avoid a memory allocation when "" is passed.
@@ -239,7 +260,7 @@ rcl_node_init(
     global_args = &(node->context->global_arguments);
   }
   ret = rcl_remap_node_name(
-    &(node->impl->options.arguments), global_args, name, *allocator,
+    &(node->impl->options.arguments), global_args, local_name_, *allocator,
     &remapped_node_name);
   if (RCL_RET_OK != ret) {
     goto fail;
