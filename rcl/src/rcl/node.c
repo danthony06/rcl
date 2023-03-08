@@ -265,11 +265,15 @@ rcl_node_init(
   if (RCL_RET_OK != ret) {
     goto fail;
   } else if (NULL != remapped_node_name) {
-    name = remapped_node_name;
+    if (should_free_local_name_) {
+      allocator->deallocate((char *)local_name_, allocator->state);
+    }
+    should_free_local_name_ = true;
+    local_name_ = remapped_node_name;
   }
   char * remapped_namespace = NULL;
   ret = rcl_remap_node_namespace(
-    &(node->impl->options.arguments), global_args, name,
+    &(node->impl->options.arguments), global_args, local_name_,
     *allocator, &remapped_namespace);
   if (RCL_RET_OK != ret) {
     goto fail;
@@ -283,13 +287,13 @@ rcl_node_init(
 
   // compute fully qualfied name of the node.
   if ('/' == local_namespace_[strlen(local_namespace_) - 1]) {
-    node->impl->fq_name = rcutils_format_string(*allocator, "%s%s", local_namespace_, name);
+    node->impl->fq_name = rcutils_format_string(*allocator, "%s%s", local_namespace_, local_name_);
   } else {
-    node->impl->fq_name = rcutils_format_string(*allocator, "%s/%s", local_namespace_, name);
+    node->impl->fq_name = rcutils_format_string(*allocator, "%s/%s", local_namespace_, local_name_);
   }
 
   // node logger name
-  node->impl->logger_name = rcl_create_node_logger_name(name, local_namespace_, allocator);
+  node->impl->logger_name = rcl_create_node_logger_name(local_name_, local_namespace_, allocator);
   RCL_CHECK_FOR_NULL_WITH_MSG(
     node->impl->logger_name, "creating logger name failed", goto fail);
 
@@ -298,7 +302,7 @@ rcl_node_init(
 
   node->impl->rmw_node_handle = rmw_create_node(
     &(node->context->impl->rmw_context),
-    name, local_namespace_);
+    local_name_, local_namespace_);
 
   RCL_CHECK_FOR_NULL_WITH_MSG(
     node->impl->rmw_node_handle, rmw_get_error_string().str, goto fail);
@@ -392,6 +396,10 @@ fail:
   ret = fail_ret;
   // fall through from fail -> cleanup
 cleanup:
+  if (should_free_local_name_) {
+    allocator->deallocate((char *)local_name_, allocator->state);
+    local_name_ = NULL;
+  }
   if (should_free_local_namespace_) {
     allocator->deallocate((char *)local_namespace_, allocator->state);
     local_namespace_ = NULL;
