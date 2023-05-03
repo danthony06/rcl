@@ -140,8 +140,7 @@ rcl_node_init(
   bool should_free_local_name_ = false;
 
   const char * local_name_ = name;
-  if (options->anonymous_name)
-  {
+  if (options->anonymous_name) {
     struct timespec ts;
     timespec_get(&ts, TIME_UTC);
     if (strlen(name) > 0) {
@@ -153,8 +152,7 @@ rcl_node_init(
         "failed to format node name string",
         ret = RCL_RET_BAD_ALLOC; goto cleanup);
       should_free_local_name_ = true;
-    }
-    else {
+    } else {
       local_name_ = rcutils_format_string(
         *allocator,
         "%jd%09ld", (intmax_t)ts.tv_sec, ts.tv_nsec);
@@ -166,9 +164,7 @@ rcl_node_init(
     }
     RCUTILS_LOG_DEBUG_NAMED(
       ROS_PACKAGE_NAME, "Setting anonymous node name to: '%s'", local_name_);
-  }
-  else
-  {
+  } else {
     // If the node is not anonymous, the name must not be null
     RCL_CHECK_ARGUMENT_FOR_NULL(local_name_, RCL_RET_INVALID_ARGUMENT);
   }
