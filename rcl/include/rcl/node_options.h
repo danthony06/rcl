@@ -33,7 +33,8 @@ extern "C"
 /// Structure which encapsulates the options for creating a rcl_node_t.
 typedef struct rcl_node_options_s
 {
-  /// If true, the node's name will be automatically generated as pseudo-random string
+  /// If true, the node's name will be automatically generated as pseudo-random string,
+  // otherwise it will be the name specified in the arguments
   bool anonymous_name;
 
   // rmw_qos_profile_t parameter_qos;

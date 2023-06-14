@@ -139,27 +139,43 @@ rcl_node_init(
   bool should_free_local_namespace_ = false;
   bool should_free_local_name_ = false;
 
+  // Make a copy of the name passed in. If the anonymous node option is chosen, we will append
+  // a pseudo-random to it, based on the current time
   const char * local_name_ = name;
+
   if (options->anonymous_name) {
+    // Get the current time as part of the pseudo-random anonymous node name
     struct timespec ts;
     timespec_get(&ts, TIME_UTC);
+
+    // If the user passed in a name, the time will be appended to it. Otherwise, just the
+    // time will be used as the node name
     if (strlen(name) > 0) {
+      // Format the string with rcutils so that we use any custom memory allocator
       local_name_ = rcutils_format_string(
         *allocator,
         "%s_%jd%09ld", name, (intmax_t)ts.tv_sec, ts.tv_nsec);
+      // Make sure the formatting operation succeeded. If not, cleanup any allocated memory
       RCL_CHECK_FOR_NULL_WITH_MSG(
         local_name_,
         "failed to format node name string",
         ret = RCL_RET_BAD_ALLOC; goto cleanup);
+      // If we passed the null check, set a flag so that the memory gets cleaned up
       should_free_local_name_ = true;
     } else {
+      // The user did not pass in the root of an anonymous node name, so just use the time
+      // as the node name
       local_name_ = rcutils_format_string(
         *allocator,
         "%jd%09ld", (intmax_t)ts.tv_sec, ts.tv_nsec);
+      // Make sure the formatting operation succeeded, otherwise exist and clean up any
+      // allocated memory
       RCL_CHECK_FOR_NULL_WITH_MSG(
         local_name_,
         "failed to format node name string",
         ret = RCL_RET_BAD_ALLOC; goto cleanup);
+      // If the null check passed, the memory has been allocated, so set a flag indicating
+      // it needs to be cleaned up
       should_free_local_name_ = true;
     }
     RCUTILS_LOG_DEBUG_NAMED(
@@ -169,17 +185,19 @@ rcl_node_init(
     RCL_CHECK_ARGUMENT_FOR_NULL(local_name_, RCL_RET_INVALID_ARGUMENT);
   }
 
-  // Make sure the node name is valid before allocating memory.
+  // Make sure the node name is valid before allocating memory for the node. The prior checks
+  // just made sure the memory allocation for the string succeeded, this check is for the name
+  // semantics
   int validation_result = 0;
   ret = rmw_validate_node_name(local_name_, &validation_result, NULL);
   if (RMW_RET_OK != ret) {
     RCL_SET_ERROR_MSG(rmw_get_error_string().str);
-    return ret;
+    goto cleanup;
   }
   if (RMW_NODE_NAME_VALID != validation_result) {
     const char * msg = rmw_node_name_validation_result_string(validation_result);
     RCL_SET_ERROR_MSG(msg);
-    return RCL_RET_NODE_INVALID_NAME;
+    goto cleanup;
   }
 
   RCL_CHECK_ARGUMENT_FOR_NULL(namespace_, RCL_RET_INVALID_ARGUMENT);
@@ -189,7 +207,8 @@ rcl_node_init(
 
   if (node->impl) {
     RCL_SET_ERROR_MSG("node already initialized, or struct memory was unintialized");
-    return RCL_RET_ALREADY_INIT;
+    ret = RCL_RET_ALREADY_INIT;
+    goto cleanup;
   }
   // Make sure rcl has been initialized.
   RCL_CHECK_FOR_NULL_WITH_MSG(
@@ -198,7 +217,8 @@ rcl_node_init(
     RCL_SET_ERROR_MSG(
       "the given context is not valid, "
       "either rcl_init() was not called or rcl_shutdown() was called.");
-    return RCL_RET_NOT_INIT;
+    ret = RCL_RET_NOT_INIT;
+    goto cleanup;
   }
 
   // Process the namespace.
