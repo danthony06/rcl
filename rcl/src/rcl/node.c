@@ -126,8 +126,6 @@ rcl_node_init(
   rcl_guard_condition_options_t graph_guard_condition_options =
     rcl_guard_condition_get_default_options();
   rcl_ret_t ret;
-  rcl_ret_t fail_ret = RCL_RET_ERROR;
-  char * remapped_node_name = NULL;
 
   // Check options and allocator first, so allocator can be used for errors.
   RCL_CHECK_ARGUMENT_FOR_NULL(options, RCL_RET_INVALID_ARGUMENT);
@@ -139,8 +137,8 @@ rcl_node_init(
   bool should_free_local_namespace_ = false;
   bool should_free_local_name_ = false;
 
-  // Make a copy of the name passed in. If the anonymous node option is chosen, we will append
-  // a pseudo-random to it, based on the current time
+  // Initially set the node name to point to the string that was passed in. If the anonymous
+  // node option is chosen, we will append a pseudo-random to it, based on the current time.
   const char * local_name_ = name;
 
   if (options->anonymous_name) {
@@ -275,6 +273,9 @@ rcl_node_init(
   if (node->impl->options.use_global_arguments) {
     global_args = &(node->context->global_arguments);
   }
+
+  char * remapped_node_name = NULL;
+
   ret = rcl_remap_node_name(
     &(node->impl->options.arguments), global_args, local_name_, *allocator,
     &remapped_node_name);
@@ -415,7 +416,7 @@ fail:
   }
   *node = rcl_get_zero_initialized_node();
 
-  ret = fail_ret;
+  ret = RCL_RET_ERROR;
   // fall through from fail -> cleanup
 cleanup:
   if (should_free_local_name_) {
